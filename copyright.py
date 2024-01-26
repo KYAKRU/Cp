@@ -109,8 +109,8 @@ async def enable_disable(Rizoel: RiZoeL, message: Message):
             if chat.id in DISABLE_CHATS:
                await message.reply(f"Enabled anti-copyright! for {chat.title}")
                DISABLE_CHATS.remove(chat.id)
-               return
             await message.reply("Already enabled!")
+          return
 
       elif re.search("no|off|disable".lower(), txt.lower()):
          if member.status == ChatMemberStatus.OWNER or member.user.id in DEVS:
