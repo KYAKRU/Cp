@@ -163,21 +163,31 @@ def AutoDelete():
         add_user(i)
         if i in DISABLE_CHATS:
             return
-        message_list = list(GROUP_MEDIAS.get(i))
-        try:
-            hue = RiZoeL.send_message(i, random.choice(DELETE_MESSAGE))
-            RiZoeL.delete_messages(i, message_list, revoke=True)
-            time.sleep(1)
-            hue.delete()
-            GROUP_MEDIAS.pop(i, None)
-        except Exception:
-            pass
-        MEDIA_GROUPS.remove(i)
-        print("clean all medias ✓")
-        print("waiting for 1 hour")
+        message_list = GROUP_MEDIAS.get(i)
+        if message_list is not None:
+            try:
+                hue = RiZoeL.send_message(i, random.choice(DELETE_MESSAGE))
+                
+                for msg_id in message_list:
+                    msg = RiZoeL.get_messages(i, msg_id)
+                    
+                    if msg.sticker is not None:
+                        RiZoeL.delete_messages(i, [msg_id], revoke=True)
+                    elif msg.video or msg.photo or msg.animation or msg.document:
+                        RiZoeL.delete_messages(i, [msg_id], revoke=True)
+                
+                time.sleep(1)
+                hue.delete()
+                GROUP_MEDIAS.pop(i, None)
+            except Exception as e:
+                print(f"Error: {e}")
+            
+            MEDIA_GROUPS.remove(i)
+            print("Cleaned all medias ✓")
+            print("Waiting for 1 hour")
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(AutoDelete, "interval", seconds=60)
+scheduler.add_job(AutoDelete, "interval", seconds=1)
 
 scheduler.start()
 
