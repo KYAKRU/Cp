@@ -97,45 +97,44 @@ async def status(_, message: Message):
    
 @RiZoeL.on_message(filters.command(["anticopyright", "copyright"]))
 async def enable_disable(Rizoel: RiZoeL, message: Message):
-   chat = message.chat
-   if chat.id == message.from_user.id:
-      await message.reply("Use this command in group!")
-      return
-   txt = ' '.join(message.command[1:])
-   if txt:
-      member = await Rizoel.get_chat_member(chat.id, message.from_user.id)
-      if re.search("on|yes|enable".lower(), txt.lower()):
-         if member.status in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR] or member.user.id in DEVS:
-            if chat.id in DISABLE_CHATS:
-               await message.reply(f"Enabled anti-copyright! for {chat.title}")
-               DISABLE_CHATS.remove(chat.id)
-            await message.reply("Already enabled!")
-          return
-
-      elif re.search("no|off|disable".lower(), txt.lower()):
-         if member.status == ChatMemberStatus.OWNER or member.user.id in DEVS:
-            if chat.id in DISABLE_CHATS:
-               await message.reply("Already disabled!")
-               return
-            DISABLE_CHATS.append(chat.id)
-            if chat.id in MEDIA_GROUPS:
-               MEDIA_GROUPS.remove(chat.id)
-            await message.reply(f"Disable Anti-CopyRight for {chat.title}!")
-         else:
-            await message.reply("Only chat Owner can disable anti-copyright!")
-            return 
-      else:
-         if member.status in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR] or member.user.id in DEVS:
-            if chat.id in DISABLE_CHATS:
-               await message.reply("Anti-Copyright is disable for this chat! \n\ntype `/anticopyright enable` to enable Anti-CopyRight")
+    chat = message.chat
+    if chat.id == message.from_user.id:
+        await message.reply("Use this command in a group!")
+        return
+    txt = ' '.join(message.command[1:])
+    if txt:
+        member = await Rizoel.get_chat_member(chat.id, message.from_user.id)
+        if re.search("on|yes|enable".lower(), txt.lower()):
+            if member.status in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR] or member.user.id in DEVS:
+                if chat.id in DISABLE_CHATS:
+                    await message.reply(f"Enabled anti-copyright! for {chat.title}")
+                    DISABLE_CHATS.remove(chat.id)
+                    return
+                await message.reply("Already enabled!")
+                return
+        elif re.search("no|off|disable".lower(), txt.lower()):
+            if member.status == ChatMemberStatus.OWNER or member.user.id in DEVS:
+                if chat.id in DISABLE_CHATS:
+                    await message.reply("Already disabled!")
+                    return
+                DISABLE_CHATS.append(chat.id)
+                if chat.id in MEDIA_GROUPS:
+                    MEDIA_GROUPS.remove(chat.id)
+                await message.reply(f"Disable Anti-CopyRight for {chat.title}!")
             else:
-               await message.reply("Anti-Copyright is enable for this chat! \n\ntype `/anticopyright disable` to disable Anti-CopyRight")
-              
-   else:
-       if chat.id in DISABLE_CHATS:
-          await message.reply("Anti-Copyright is disable for this chat! \n\ntype `/anticopyright enable` to enable Anti-CopyRight")
-       else:
-          await message.reply("Anti-Copyright is enable for this chat! \n\ntype `/anticopyright disable` to disable Anti-CopyRight")
+                await message.reply("Only chat Owner can disable anti-copyright!")
+                return
+        else:
+            if member.status in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR] or member.user.id in DEVS:
+                if chat.id in DISABLE_CHATS:
+                    await message.reply("Anti-Copyright is disabled for this chat! \n\ntype `/anticopyright enable` to enable Anti-CopyRight")
+                else:
+                    await message.reply("Anti-Copyright is enabled for this chat! \n\ntype `/anticopyright disable` to disable Anti-CopyRight")
+    else:
+        if chat.id in DISABLE_CHATS:
+            await message.reply("Anti-Copyright is disabled for this chat! \n\ntype `/anticopyright enable` to enable Anti-CopyRight")
+        else:
+            await message.reply("Anti-Copyright is enabled for this chat! \n\ntype `/anticopyright disable` to disable Anti-CopyRight")
 
 @RiZoeL.on_message(filters.all & filters.group)
 async def watcher(_, message: Message):
