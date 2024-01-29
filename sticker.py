@@ -4,7 +4,7 @@ from pyrogram.types import Message
 # Define the API key and API hash for your bot
 API_ID = 18551731
 API_HASH = "227df64ada8de8ebad3b3df5a7603d12"
-BOT_TOKEN = "5868706821:AAEiwYP73uQsaB1vHK1eD_pvPKFQqVBRcWo"
+BOT_TOKEN = "6790998054:AAGJ2sebl3MpWJn7a-MMa8M_HQTydWUuMHY"
 
 app = Client("sticker_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
