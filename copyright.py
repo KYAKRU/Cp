@@ -1,21 +1,19 @@
-
 import os
 import re
 import sys
 import time
 import datetime
-import random 
+import random
 import asyncio
-
+from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import filters, Client, idle
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatMemberStatus, ChatType
+from config import API_ID, API_HASH, BOT_TOKEN, BLACKLIST_FILE
 
-from apscheduler.schedulers.background import BackgroundScheduler
-
-API_ID = 18551731
-API_HASH = "227df64ada8de8ebad3b3df5a7603d12"
-BOT_TOKEN = "6790998054:AAGJ2sebl3MpWJn7a-MMa8M_HQTydWUuMHY"
+API_ID = API_ID
+API_HASH = API_HASH
+BOT_TOKEN = BOT_TOKEN
 DEVS = [5018319249, 5498943520]
 
 ALL_GROUPS = []
@@ -23,13 +21,12 @@ TOTAL_USERS = []
 MEDIA_GROUPS = []
 DISABLE_CHATS = []
 GROUP_MEDIAS = {}
-
 DELETE_MESSAGE = [
     "1 Hour complete, I'm doing my work...",
     "Its time to delete all medias!",
     "No one can Copyright until I'm alive 😤",
     "Hue hue, let's delete media...",
-    "I'm here to delete medias 🙋", 
+    "I'm here to delete medias 🙋",
     "😮‍💨 Finally I delete medias",
     "Great work done by me 🥲",
     "All media cleared!",
@@ -44,13 +41,78 @@ START_MESSAGE = """
  > **I can save your groups from Copyrights 😉**
 
  **Work:** I'll Delete all medias of your group in every 1 hour ➰
- 
+
  **Process?:** Simply add me in your group and promote as admin with delete messages right!
 """
 
 BUTTON = [[InlineKeyboardButton("+ Add me in group +", url="http://t.me/AntiCopyRightRobot?startgroup=s&admin=delete_messages")]]
 
 RiZoeL = Client('RiZoeL-Anti-CopyRight', api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+app = Client("sticker_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+
+private_filter = filters.private & filters.command("start")
+group_filter = filters.group & filters.command("start")
+
+blacklist_words = set()
+
+with open(BLACKLIST_FILE, "r") as file:
+    for line in file:
+        blacklist_words.add(line.strip().lower())
+
+@app.on_message(private_filter)
+def start_private(_, message: Message):
+    message.reply_text("I'm a Sticker Detector Bot! Use me in groups to delete stickers.")
+
+@app.on_message(group_filter)
+def start_group(_, message: Message):
+    message.reply_text("I'm a Sticker Detector Bot! I will delete stickers in this group.")
+
+@app.on_message(filters.group & filters.sticker)
+def delete_stickers_group(_, message: Message):
+    message.delete()
+
+@app.on_message(filters.private & filters.sticker)
+def delete_stickers_private(_, message: Message):
+    message.reply_text("Sticker detected! Use me in groups to delete stickers.")
+
+@RiZoeL.on_message(filters.group & filters.text)
+def remove_blacklist_words(_, message: Message):
+    chat = message.chat
+    if chat.type == ChatType.GROUP or chat.type == ChatType.SUPERGROUP:
+        if any(word in message.text.lower() for word in blacklist_words):
+            message.delete()
+
+
+@RiZoeL.on_message(filters.command(["stickeron", "stickeron"]))
+async def enable_sticker_deletion(_, message: Message):
+    chat = message.chat
+    user_id = message.from_user.id
+    if chat.type == ChatType.GROUP or chat.type == ChatType.SUPERGROUP:
+        if chat.id not in ALL_GROUPS:
+            ALL_GROUPS.append(chat.id)
+        if chat.id in DISABLE_CHATS:
+            DISABLE_CHATS.remove(chat.id)
+        if chat.id not in MEDIA_GROUPS:
+            MEDIA_GROUPS.append(chat.id)
+        await message.reply("Sticker deletion enabled for this group!")
+
+@RiZoeL.on_message(filters.command(["stickeroff", "stickoff"]))
+async def disable_sticker_deletion(_, message: Message):
+    chat = message.chat
+    user_id = message.from_user.id
+    if chat.type == ChatType.GROUP or chat.type == ChatType.SUPERGROUP:
+        if chat.id in MEDIA_GROUPS:
+            MEDIA_GROUPS.remove(chat.id)
+        if chat.id not in DISABLE_CHATS:
+            DISABLE_CHATS.append(chat.id)
+        await message.reply("Sticker deletion disabled for this group!")
+
+@RiZoeL.on_message(filters.group & filters.text)
+def remove_blacklist_words(_, message: Message):
+    chat = message.chat
+    if chat.type == ChatType.GROUP or chat.type == ChatType.SUPERGROUP:
+        if any(word in message.text.lower() for word in blacklist_words):
+            message.delete()
 
 def add_user(user_id):
     if user_id not in TOTAL_USERS:
@@ -90,48 +152,6 @@ async def status(_, message: Message):
     stats += f"Disabled chats: `{len(DISABLE_CHATS)}` \n"
     stats += f"Total Media active chats: `{len(MEDIA_GROUPS)}` \n\n"
     await wait.edit_text(stats)
-
-@RiZoeL.on_message(filters.command(["anticopyright", "copyright"]))
-async def enable_disable(Rizoel: RiZoeL, message: Message):
-    chat = message.chat
-    if chat.id == message.from_user.id:
-        await message.reply("Use this command in group!")
-        return
-    txt = ' '.join(message.command[1:])
-    if txt:
-        member = await Rizoel.get_chat_member(chat.id, message.from_user.id)
-        if re.search("on|yes|enable".lower(), txt.lower()):
-            if member.status in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR] or member.user.id in DEVS:
-                if chat.id in DISABLE_CHATS:
-                    await message.reply(f"Enabled anti-copyright! for {chat.title}")
-                    DISABLE_CHATS.remove(chat.id)
-                else:
-                    await message.reply("Already enabled!")
-                return
-        elif re.search("no|off|disable".lower(), txt.lower()):
-            if member.status == ChatMemberStatus.OWNER or member.user.id in DEVS:
-                if chat.id in DISABLE_CHATS:
-                    await message.reply("Already disabled!")
-                else:
-                    DISABLE_CHATS.append(chat.id)
-                    if chat.id in MEDIA_GROUPS:
-                        MEDIA_GROUPS.remove(chat.id)
-                    await message.reply(f"Disable Anti-CopyRight for {chat.title}!")
-            else:
-                await message.reply("Only chat Owner can disable anti-copyright!")
-            return
-        else:
-            if member.status in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR] or member.user.id in DEVS:
-                if chat.id in DISABLE_CHATS:
-                    await message.reply("Anti-Copyright is disabled for this chat! \n\ntype `/anticopyright enable` to enable Anti-CopyRight")
-                else:
-                    await message.reply("Anti-Copyright is enabled for this chat! \n\ntype `/anticopyright disable` to disable Anti-CopyRight")
-                return
-    else:
-        if chat.id in DISABLE_CHATS:
-            await message.reply("Anti-Copyright is disabled for this chat! \n\ntype `/anticopyright enable` to enable Anti-CopyRight")
-        else:
-            await message.reply("Anti-Copyright is enabled for this chat! \n\ntype `/anticopyright disable` to disable Anti-CopyRight")
 
 @RiZoeL.on_message(filters.all & filters.group)
 async def watcher(_, message: Message):
@@ -194,6 +214,7 @@ scheduler.start()
 def starter():
     print('starting bot...')
     RiZoeL.start()
+    app.start()
     print('bot Started ✓')
     idle()
 
