@@ -104,7 +104,9 @@ async def disable_pdf_deletion(chat_id):
 
 async def delete_media_message(chat_id, message_id):
     try:
-        await RiZoeL.delete_messages(chat_id, [message_id], revoke=True)
+        message = await RiZoeL.get_messages(chat_id, message_id)
+        if message.text:
+            await RiZoeL.delete_messages(chat_id, [message_id], revoke=True)
     except Exception as e:
         print(f"Error deleting media message: {e}")
 
