@@ -1,4 +1,8 @@
 pyrogram
 tgcrypto
 apscheduler
-
+asyncio
+unicodedata
+os
+re
+sys
