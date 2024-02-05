@@ -8,13 +8,18 @@ import asyncio
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyrogram import filters, Client, idle
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
-from pyrogram.enums import ChatMemberStatus, ChatType
-from config import API_ID, API_HASH, BOT_TOKEN, BLACKLIST_FILE
+from pyrogram.enums import ChatType
+import unicodedata
+from config import API_ID, API_HASH, BOT_TOKEN, BLACKLIST_FILE, OWNER_ID
+
+def has_special_font(text):
+    special_font_regex = re.compile(r'[\u0000-\u001F\u007F-\u009F\u00AD\u0600-\u0605\u061C\u06DD\u070F\u17B4\u17B5\u200B-\u200D\u2028-\u202F\u2060-\u206F\uFEFF\uFFF9-\uFFFB]')
+    return bool(special_font_regex.search(text))
 
 API_ID = API_ID
 API_HASH = API_HASH
 BOT_TOKEN = BOT_TOKEN
-DEVS = [5018319249, 5498943520]
+DEVS = [OWNER_ID]
 
 ALL_GROUPS = []
 TOTAL_USERS = []
@@ -59,123 +64,119 @@ with open(BLACKLIST_FILE, "r") as file:
     for line in file:
         blacklist_words.add(line.strip().lower())
 
-@app.on_message(private_filter)
-def start_private(_, message: Message):
-    message.reply_text("I'm a Sticker Detector Bot! Use me in groups to delete stickers.")
+delete_mode = True  # Initialize delete_mode
+sticker_delete_mode = True  # Initialize sticker_delete_mode
+media_delete_mode = True  # Initialize media_delete_mode
+pdf_delete_mode = True  # Initialize pdf_delete_mode
 
-@app.on_message(group_filter)
-def start_group(_, message: Message):
-    message.reply_text("I'm a Sticker Detector Bot! I will delete stickers in this group.")
+async def send_status_message(chat_id, status):
+    await RiZoeL.send_message(chat_id, f"Sticker/Media/PDF deletion is now {status}.")
 
-@app.on_message(filters.group & filters.sticker)
-def delete_stickers_group(_, message: Message):
-    message.delete()
+async def enable_sticker_deletion(chat_id):
+    if chat_id not in MEDIA_GROUPS:
+        MEDIA_GROUPS.append(chat_id)
+    await send_status_message(chat_id, "enabled for stickers")
 
-@app.on_message(filters.private & filters.sticker)
-def delete_stickers_private(_, message: Message):
-    message.reply_text("Sticker detected! Use me in groups to delete stickers.")
+async def disable_sticker_deletion(chat_id):
+    if chat_id in MEDIA_GROUPS:
+        MEDIA_GROUPS.remove(chat_id)
+    await send_status_message(chat_id, "disabled for stickers")
 
-@RiZoeL.on_message(filters.group & filters.text)
-def remove_blacklist_words(_, message: Message):
-    chat = message.chat
-    if chat.type == ChatType.GROUP or chat.type == ChatType.SUPERGROUP:
-        if any(word in message.text.lower() for word in blacklist_words):
-            message.delete()
+async def enable_media_deletion(chat_id):
+    if chat_id not in MEDIA_GROUPS:
+        MEDIA_GROUPS.append(chat_id)
+    await send_status_message(chat_id, "enabled for media")
 
+async def disable_media_deletion(chat_id):
+    if chat_id in MEDIA_GROUPS:
+        MEDIA_GROUPS.remove(chat_id)
+    await send_status_message(chat_id, "disabled for media")
 
-@RiZoeL.on_message(filters.command(["stickeron", "stickeron"]))
-async def enable_sticker_deletion(_, message: Message):
-    chat = message.chat
-    user_id = message.from_user.id
-    if chat.type == ChatType.GROUP or chat.type == ChatType.SUPERGROUP:
-        if chat.id not in ALL_GROUPS:
-            ALL_GROUPS.append(chat.id)
-        if chat.id in DISABLE_CHATS:
-            DISABLE_CHATS.remove(chat.id)
-        if chat.id not in MEDIA_GROUPS:
-            MEDIA_GROUPS.append(chat.id)
-        await message.reply("Sticker deletion enabled for this group!")
+async def enable_pdf_deletion(chat_id):
+    if chat_id not in MEDIA_GROUPS:
+        MEDIA_GROUPS.append(chat_id)
+    await send_status_message(chat_id, "enabled for PDFs")
 
-@RiZoeL.on_message(filters.command(["stickeroff", "stickoff"]))
-async def disable_sticker_deletion(_, message: Message):
-    chat = message.chat
-    user_id = message.from_user.id
-    if chat.type == ChatType.GROUP or chat.type == ChatType.SUPERGROUP:
-        if chat.id in MEDIA_GROUPS:
-            MEDIA_GROUPS.remove(chat.id)
-        if chat.id not in DISABLE_CHATS:
-            DISABLE_CHATS.append(chat.id)
-        await message.reply("Sticker deletion disabled for this group!")
+async def disable_pdf_deletion(chat_id):
+    if chat_id in MEDIA_GROUPS:
+        MEDIA_GROUPS.remove(chat_id)
+    await send_status_message(chat_id, "disabled for PDFs")
 
-@RiZoeL.on_message(filters.group & filters.text)
-def remove_blacklist_words(_, message: Message):
-    chat = message.chat
-    if chat.type == ChatType.GROUP or chat.type == ChatType.SUPERGROUP:
-        if any(word in message.text.lower() for word in blacklist_words):
-            message.delete()
-
-def add_user(user_id):
-    if user_id not in TOTAL_USERS:
-        TOTAL_USERS.append(user_id)
-
-@RiZoeL.on_message(filters.command(["ping", "speed"]))
-async def ping(_, e: Message):
-    start = datetime.datetime.now()
-    add_user(e.from_user.id)
-    rep = await e.reply_text("**Pong !!**")
-    end = datetime.datetime.now()
-    ms = (end - start).microseconds / 1000
-    await rep.edit_text(f"🤖 **PONG**: `{ms}`ᴍs")
-
-@RiZoeL.on_message(filters.command(["help", "start"]))
-async def start_message(_, message: Message):
-    add_user(message.from_user.id)
-    await message.reply(START_MESSAGE.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(BUTTON))
-
-@RiZoeL.on_message(filters.user(DEVS) & filters.command(["restart", "reboot"]))
-async def restart_(_, e: Message):
-    await e.reply("**Restarting.....**")
+async def delete_media_message(chat_id, message_id):
     try:
-        await RiZoeL.stop()
-    except Exception:
-        pass
-    args = [sys.executable, "copyright.py"]
-    os.execl(sys.executable, *args)
-    quit()
+        await RiZoeL.delete_messages(chat_id, [message_id], revoke=True)
+    except Exception as e:
+        print(f"Error deleting media message: {e}")
 
-@RiZoeL.on_message(filters.user(DEVS) & filters.command(["stat", "stats"]))
-async def status(_, message: Message):
-    wait = await message.reply("Fetching.....")
-    stats = "**Here is total stats of me!** \n\n"
-    stats += f"Total Chats: `{len(ALL_GROUPS)}` \n"
-    stats += f"Total users: `{len(TOTAL_USERS)}` \n"
-    stats += f"Disabled chats: `{len(DISABLE_CHATS)}` \n"
-    stats += f"Total Media active chats: `{len(MEDIA_GROUPS)}` \n\n"
-    await wait.edit_text(stats)
+@RiZoeL.on_message(filters.group & filters.command(["blocktest"]))
+async def toggle_sticker_deletion(_, message):
+    chat_id = message.chat.id
+    global sticker_delete_mode
+    sticker_delete_mode = not sticker_delete_mode
+    if sticker_delete_mode:
+        await enable_sticker_deletion(chat_id)
+    else:
+        await disable_sticker_deletion(chat_id)
 
-@RiZoeL.on_message(filters.all & filters.group)
-async def watcher(_, message: Message):
-    chat = message.chat
-    user_id = message.from_user.id
-    if chat.type == ChatType.GROUP or chat.type == ChatType.SUPERGROUP:
-        if chat.id not in ALL_GROUPS:
-            ALL_GROUPS.append(chat.id)
-        if chat.id in DISABLE_CHATS:
-            return
-        if chat.id not in MEDIA_GROUPS:
-            if chat.id in DISABLE_CHATS:
-                return
-            MEDIA_GROUPS.append(chat.id)
-        if message.video or message.photo or message.animation or message.document:
-            check = GROUP_MEDIAS.get(chat.id)
-            if check:
-                GROUP_MEDIAS[chat.id].append(message.id)
-                print(f"Chat: {chat.title}, message ID: {message.id}")
-            else:
-                GROUP_MEDIAS[chat.id] = [message.id]
-                print(f"Chat: {chat.title}, message ID: {message.id}")
+@RiZoeL.on_message(filters.group & filters.command(["stickeron"]))
+async def enable_sticker_deletion_command(_, message):
+    chat_id = message.chat.id
+    global sticker_delete_mode
+    sticker_delete_mode = True
+    await enable_sticker_deletion(chat_id)
 
-def AutoDelete():
+@RiZoeL.on_message(filters.group & filters.command(["stickeroff"]))
+async def disable_sticker_deletion_command(_, message):
+    chat_id = message.chat.id
+    global sticker_delete_mode
+    sticker_delete_mode = False
+    await disable_sticker_deletion(chat_id)
+
+@RiZoeL.on_message(filters.group & filters.command(["mediaon"]))
+async def enable_media_deletion_command(_, message):
+    chat_id = message.chat.id
+    global media_delete_mode
+    media_delete_mode = True
+    await enable_media_deletion(chat_id)
+
+@RiZoeL.on_message(filters.group & filters.command(["mediaoff"]))
+async def disable_media_deletion_command(_, message):
+    chat_id = message.chat.id
+    global media_delete_mode
+    media_delete_mode = False
+    await disable_media_deletion(chat_id)
+
+@RiZoeL.on_message(filters.group & filters.command(["pdfon"]))
+async def enable_pdf_deletion_command(_, message):
+    chat_id = message.chat.id
+    global pdf_delete_mode
+    pdf_delete_mode = True
+    await enable_pdf_deletion(chat_id)
+
+@RiZoeL.on_message(filters.group & filters.command(["pdfoff"]))
+async def disable_pdf_deletion_command(_, message):
+    chat_id = message.chat.id
+    global pdf_delete_mode
+    pdf_delete_mode = False
+    await disable_pdf_deletion(chat_id)
+
+@RiZoeL.on_message(filters.group)
+async def delete_blacklisted_messages(client, message):
+    try:
+        if message.text:
+            regular_font_text = unicodedata.normalize('NFKD', message.text)
+            if any(word.lower() in regular_font_text.lower() for word in blacklist_words) and delete_mode:
+                await message.delete()
+            elif has_special_font(message.text) and delete_mode:
+                await message.delete()
+        elif message.sticker and sticker_delete_mode:
+            await delete_media_message(message.chat.id, message.message_id)
+        elif (message.video or message.photo or message.animation or message.document) and media_delete_mode:
+            await delete_media_message(message.chat.id, message.message_id)
+    except Exception as e:
+        print(f"Error processing message: {e}")
+
+async def AutoDelete():
     if len(MEDIA_GROUPS) == 0:
         return
 
@@ -186,22 +187,18 @@ def AutoDelete():
         message_list = GROUP_MEDIAS.get(i)
         if message_list is not None:
             try:
-                hue = RiZoeL.send_message(i, random.choice(DELETE_MESSAGE))
-                
+                hue = await RiZoeL.send_message(i, random.choice(DELETE_MESSAGE))
                 for msg_id in message_list:
-                    msg = RiZoeL.get_messages(i, msg_id)
-                    
-                    if msg.sticker is not None:
-                        RiZoeL.delete_messages(i, [msg_id], revoke=True)
-                    elif msg.video or msg.photo or msg.animation or msg.document:
-                        RiZoeL.delete_messages(i, [msg_id], revoke=True)
-                
+                    msg = await RiZoeL.get_messages(i, msg_id)
+                    if msg.sticker is not None and sticker_delete_mode:
+                        await delete_media_message(i, msg_id)
+                    elif (msg.video or msg.photo or msg.animation or msg.document) and media_delete_mode:
+                        await delete_media_message(i, msg_id)
                 time.sleep(1)
-                hue.delete()
+                await hue.delete()
                 GROUP_MEDIAS.pop(i, None)
             except Exception as e:
                 print(f"Error: {e}")
-            
             MEDIA_GROUPS.remove(i)
             print("Cleaned all medias ✓")
             print("Waiting for 1 hour")
