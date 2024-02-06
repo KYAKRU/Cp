@@ -172,11 +172,12 @@ async def delete_blacklisted_messages(client, message):
             elif has_special_font(message.text) and delete_mode:
                 await message.delete()
         elif message.sticker and sticker_delete_mode:
-            await delete_media_message(message.chat.id, message.message_id)
+            await message.delete()
         elif (message.video or message.photo or message.animation or message.document) and media_delete_mode:
-            await delete_media_message(message.chat.id, message.message_id)
+            await message.delete()
     except Exception as e:
         print(f"Error processing message: {e}")
+
 
 async def AutoDelete():
     if len(MEDIA_GROUPS) == 0:
