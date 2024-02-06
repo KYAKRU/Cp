@@ -161,7 +161,7 @@ async def disable_pdf_deletion_command(_, message):
     global pdf_delete_mode
     pdf_delete_mode = False
     await disable_pdf_deletion(chat_id)
-
+"""
 @RiZoeL.on_message(filters.group)
 async def delete_blacklisted_messages(client, message):
     try:
@@ -180,7 +180,7 @@ async def delete_blacklisted_messages(client, message):
     except Exception as e:
         print(f"Error processing message: {e}")
 
-
+"""
 async def AutoDelete():
     if len(MEDIA_GROUPS) == 0:
         return
