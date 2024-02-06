@@ -171,6 +171,8 @@ async def delete_blacklisted_messages(client, message):
                 await message.delete()
             elif has_special_font(message.text) and delete_mode:
                 await message.delete()
+            elif "\n" in message.text:
+                pass
         elif message.sticker and sticker_delete_mode:
             await message.delete()
         elif (message.video or message.photo or message.animation or message.document) and media_delete_mode:
