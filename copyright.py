@@ -161,10 +161,11 @@ async def disable_pdf_deletion_command(_, message):
     global pdf_delete_mode
     pdf_delete_mode = False
     await disable_pdf_deletion(chat_id)
-"""
+
 @RiZoeL.on_message(filters.group)
 async def delete_blacklisted_messages(client, message):
     try:
+        """
         if message.text:
             regular_font_text = unicodedata.normalize('NFKD', message.text)
             if any(word.lower() in regular_font_text.lower() for word in blacklist_words) and delete_mode:
@@ -172,15 +173,16 @@ async def delete_blacklisted_messages(client, message):
             elif has_special_font(message.text) and delete_mode:
                 await message.delete()
             elif "\n" in message.text:
-                pass
-        elif message.sticker and sticker_delete_mode:
+               """
+            #pass
+        if message.sticker and sticker_delete_mode:
             await message.delete()
         elif (message.video or message.photo or message.animation or message.document) and media_delete_mode:
             await message.delete()
     except Exception as e:
         print(f"Error processing message: {e}")
 
-"""
+
 async def AutoDelete():
     if len(MEDIA_GROUPS) == 0:
         return
