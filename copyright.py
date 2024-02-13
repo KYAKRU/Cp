@@ -11,7 +11,6 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatType
 import unicodedata
 from config import API_ID, API_HASH, BOT_TOKEN, BLACKLIST_FILE, OWNER_ID
-from apscheduler.schedulers.background import BackgroundScheduler
 
 def has_special_font(text):
     special_font_regex = re.compile(r'[\u0000-\u001F\u007F-\u009F\u00AD\u0600-\u0605\u061C\u06DD\u070F\u17B4\u17B5\u200B-\u200D\u2028-\u202F\u2060-\u206F\uFEFF\uFFF9-\uFFFB]')
@@ -217,9 +216,11 @@ def AutoDelete():
 
 scheduler = BackgroundScheduler()
 
-scheduler.add_job(AutoDelete, "interval", seconds=900)
+scheduler.add_job(AutoDelete, "interval", seconds=200)
 
 scheduler.start()
+
+from apscheduler.schedulers.background import BackgroundScheduler() 
     print('starting bot...')
     RiZoeL.start()
     app.start()
