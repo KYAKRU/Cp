@@ -210,10 +210,16 @@ async def AutoDelete():
             print("Cleaned all medias ✓")
             print("Waiting for 1 hour")
 
+def AutoDelete():
+  
+    print("Deleting message...")
+
 scheduler = BackgroundScheduler()
+
 scheduler.add_job(AutoDelete, "interval", seconds=900)
 
 scheduler.start()
+from apscheduler.schedulers.background import BackgroundScheduler
 
 def starter():
     print('starting bot...')
