@@ -181,10 +181,17 @@ async def AutoDelete():
             except Exception as e:
                 print(f"Error: {e}")
             MEDIA_GROUPS.remove(i)
-            scheduler.add_job(AutoDelete, "interval", seconds=60)
+            scheduler.add_job(AutoDelete, "interval", seconds=200)
 
 scheduler.start()
+from apscheduler.schedulers.background import BackgroundScheduler
 
+def AutoDelete():
+    print("Deleting message...")
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(AutoDelete, "interval", seconds=200)
+scheduler.start()
 def starter():
     print('starting bot...')
     RiZoeL.start()
