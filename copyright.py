@@ -220,7 +220,7 @@ scheduler.add_job(AutoDelete, "interval", seconds=200)
 
 scheduler.start()
 
-from apscheduler.schedulers.background import BackgroundScheduler() 
+from apscheduler.schedulers.background import BackgroundScheduler 
     print('starting bot...')
     RiZoeL.start()
     app.start()
